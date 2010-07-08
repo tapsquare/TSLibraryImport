@@ -19,9 +19,8 @@
 		C85FFD1A11C2F14B0037DE87 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C85FFD1911C2F14B0037DE87 /* AudioToolbox.framework */; };
 		C85FFD2211C2F7BC0037DE87 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C85FFD2111C2F7BC0037DE87 /* Accelerate.framework */; };
 		C87D067411C2CB1C00819944 /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C87D067311C2CB1C00819944 /* MediaPlayer.framework */; };
-		C8E0E85F11CC0E6200B51EB5 /* Africa.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = C8E0E85E11CC0E6200B51EB5 /* Africa.mp3 */; };
+		C8AA47C011E6708800CD2D6D /* README.rtf in Resources */ = {isa = PBXBuildFile; fileRef = C8AA47BF11E6708800CD2D6D /* README.rtf */; };
 		C8E0E92811CC18ED00B51EB5 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C8E0E92711CC18ED00B51EB5 /* CoreMedia.framework */; };
-		C8E0E9EA11CC218700B51EB5 /* Epistrophy.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = C8E0E9E911CC218700B51EB5 /* Epistrophy.mp3 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,9 +42,8 @@
 		C85FFD1B11C2F14B0037DE87 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
 		C85FFD2111C2F7BC0037DE87 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		C87D067311C2CB1C00819944 /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaPlayer.framework; path = System/Library/Frameworks/MediaPlayer.framework; sourceTree = SDKROOT; };
-		C8E0E85E11CC0E6200B51EB5 /* Africa.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = Africa.mp3; path = Resources/Africa.mp3; sourceTree = "<group>"; };
+		C8AA47BF11E6708800CD2D6D /* README.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = README.rtf; sourceTree = "<group>"; };
 		C8E0E92711CC18ED00B51EB5 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
-		C8E0E9E911CC218700B51EB5 /* Epistrophy.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = Epistrophy.mp3; path = Resources/Epistrophy.mp3; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +87,7 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				C8AA47BF11E6708800CD2D6D /* README.rtf */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
@@ -110,8 +109,6 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				C8E0E9E911CC218700B51EB5 /* Epistrophy.mp3 */,
-				C8E0E85E11CC0E6200B51EB5 /* Africa.mp3 */,
 				2899E5210DE3E06400AC0155 /* iPodLibraryAccessViewController.xib */,
 				28AD733E0D9D9553002E5188 /* MainWindow.xib */,
 				8D1107310486CEB800E47090 /* iPodLibraryAccess-Info.plist */,
@@ -179,8 +176,7 @@
 			files = (
 				28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */,
 				2899E5220DE3E06400AC0155 /* iPodLibraryAccessViewController.xib in Resources */,
-				C8E0E85F11CC0E6200B51EB5 /* Africa.mp3 in Resources */,
-				C8E0E9EA11CC218700B51EB5 /* Epistrophy.mp3 in Resources */,
+				C8AA47C011E6708800CD2D6D /* README.rtf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

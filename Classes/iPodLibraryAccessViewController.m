@@ -10,8 +10,6 @@
 
 @implementation iPodLibraryAccessViewController
 
-
-
 /*
 // The designated initializer. Override to perform setup that is required before the view is loaded.
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
@@ -58,11 +56,22 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-	//AVAudioSession* avSession = [AVAudioSession sharedInstance];
+	[progressView setProgress:0.f];
+
+	AVAudioSession* session = [AVAudioSession sharedInstance];
+	NSError* error = nil;
+	// Thought maybe setting this to one of the "exclusive" categories
+	// would give us faster results, e.g., by granting us access to the
+	// hardware encoder, but with any other category, you get -11820 errors
+	// from AVAssetExportSession
+	if(![session setCategory:AVAudioSessionCategoryAmbient error:&error]) {
+		NSLog(@"Couldn't set audio session category: %@", error);
+	}
 	
-	//try exporting an mp3 from the bundle
-	NSURL* assetURL = [NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"Epistrophy" ofType:@"mp3"]];
-	[self exportAssetAtURL:assetURL];	
+	if(![session setActive:YES error:&error]) {
+		NSLog(@"Couldn't make audio session active: %@", error);
+	}
+	
 }
 
 /*
@@ -73,26 +82,19 @@
 }
 */
 
-/*
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
-	NSLog(@"observeValueForKeyPath: %@", keyPath);
-	if ([keyPath compare:@"status"] == 0) {
-		NSLog(@"status of playerItem changed");
-		AVPlayerItem* playerItem = (AVPlayerItem*)object;
-		if (playerItem.status == AVPlayerItemStatusReadyToPlay) {
-			NSLog(@"playerItem ready to play");
-			[player play];
-		}
-	}
-}
-*/
 
 - (void)progressTimer:(NSTimer*)timer {
 	AVAssetExportSession* export = (AVAssetExportSession*)timer.userInfo;
 	switch (export.status) {
 		case AVAssetExportSessionStatusExporting:
-			NSLog(@"progress: %f", export.progress);
+		{
+			NSTimeInterval delta = [NSDate timeIntervalSinceReferenceDate] - startTime;
+			float minutes = rintf(delta/60.f);
+			float seconds = rintf(fmodf(delta, 60.f));
+			[elapsedLabel setText:[NSString stringWithFormat:@"%2.0f:%02.0f", minutes, seconds]];
+			[progressView setProgress:export.progress];
 			break;
+		}
 		case AVAssetExportSessionStatusCancelled:
 		case AVAssetExportSessionStatusCompleted:
 		case AVAssetExportSessionStatusFailed:
@@ -106,7 +108,11 @@
 - (void)exportAssetAtURL:(NSURL*)assetURL {
 	NSDictionary * options = [[NSDictionary alloc] init];
 	AVURLAsset* asset = [AVURLAsset URLAssetWithURL:assetURL options:options];	
-	//create an export session to write the asset as an m4a
+	// create an export session to write the asset as an m4a
+	// I've tried AVAssetExportPresetPassthrough hoping that we could just stuff
+	// the audio into a .caf in whatever format it appears in the iPod Library, but
+	// couldn't get it to work. 
+	//
 	AVAssetExportSession* export = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetAppleM4A];
 	//set the export session's outputURL to <Documents>/test.m4a
 	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
@@ -115,16 +121,22 @@
 	[[NSFileManager defaultManager] removeItemAtURL:outURL error:nil];
 	export.outputURL = outURL;
 	//set the output file type
+	//this doesn't like anything other than AVFileTypeAppleM4A
+	//it seems we should be able to specify AVFileTypeCoreAudioFormat (with AVAssetExportPresetPassthrough?) to skip
+	//the encoding step, but fuck you very much.
 	export.outputFileType = AVFileTypeAppleM4A;
 	[export addObserver:self forKeyPath:@"status" options:0 context:nil];
 	[export addObserver:self forKeyPath:@"progress" options:0 context:nil];
+	startTime = [NSDate timeIntervalSinceReferenceDate];
 	[NSTimer scheduledTimerWithTimeInterval:.25 target:self selector:@selector(progressTimer:) userInfo:export repeats:YES];
 	[export exportAsynchronouslyWithCompletionHandler:^(void) {
 		if (export.status == AVAssetExportSessionStatusFailed) {
 			NSLog(@"export.error: %@", export.error);
+		} else if (export.status == AVAssetExportSessionStatusCancelled) {
+			NSLog(@"export canceeld: %@", export.error);
 		}
 		[export release];
-	}];				
+	}];
 }
 
 - (void)mediaPicker:(MPMediaPickerController *)mediaPicker 
