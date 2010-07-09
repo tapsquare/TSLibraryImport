@@ -7,6 +7,7 @@
 //
 
 #import "iPodLibraryAccessViewController.h"
+#import <AudioToolbox/AudioToolbox.h>
 
 @implementation iPodLibraryAccessViewController
 
@@ -105,26 +106,79 @@
 	}		
 }
 
+- (void)dumpAsset:(AVURLAsset*)asset {
+	NSLog(@"asset.url: %@", asset.URL);
+	for (AVMetadataItem* item in asset.commonMetadata) {
+		NSLog(@"metadata: %@", item);
+	}
+	for (AVAssetTrack* track in asset.tracks) {
+		NSLog(@"track.id: %d", track.trackID);
+		NSLog(@"track.mediaType: %@", track.mediaType);
+		CMFormatDescriptionRef fmt = [track.formatDescriptions objectAtIndex:0];
+		AudioStreamBasicDescription* desc = CMAudioFormatDescriptionGetStreamBasicDescription(fmt);
+		NSLog(@"track.enabled: %d", track.enabled);
+		NSLog(@"track.selfContained: %d", track.selfContained);
+	}
+}
+
+- (void)openURL:(NSURL*)assetURL {
+	AudioFileID audioFile;
+	OSStatus err = AudioFileOpenURL((CFURLRef)assetURL, 0x01, 0, &audioFile);
+	if (noErr != err) {
+		NSLog(@"couldn't open url: %d", err);
+	}
+}
+
 - (void)exportAssetAtURL:(NSURL*)assetURL {
 	NSDictionary * options = [[NSDictionary alloc] init];
 	AVURLAsset* asset = [AVURLAsset URLAssetWithURL:assetURL options:options];	
+	//[self dumpAsset:asset];
+	//[self openURL:assetURL];
+	/*
+	player = [[AVPlayer alloc] initWithURL:assetURL];
+	if (!player) {
+		NSLog(@"couldn't init AVPlayer!");
+	}
+	[player play];
+	*/
+
 	// create an export session to write the asset as an m4a
 	// I've tried AVAssetExportPresetPassthrough hoping that we could just stuff
 	// the audio into a .caf in whatever format it appears in the iPod Library, but
 	// couldn't get it to work. 
 	//
-	AVAssetExportSession* export = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetAppleM4A];
+	
+	NSLog(@"preset: %@", AVAssetExportPresetAppleM4A);
+	
+	NSArray *presets = [AVAssetExportSession exportPresetsCompatibleWithAsset:asset];
+	for (NSString* preset in presets) {
+		NSLog(@"preset: %@", preset);
+	}
+	
+	AVAssetExportSession* export = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetPassthrough];
+	for (NSString* type in export.supportedFileTypes) {
+		NSLog(@"type: %@", type);
+	}
 	//set the export session's outputURL to <Documents>/test.m4a
 	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 	NSString *documentsDirectory = [paths objectAtIndex:0];
-	NSURL* outURL = [NSURL fileURLWithPath:[documentsDirectory stringByAppendingPathComponent:@"test.m4a"]];
+	NSURL* outURL = [NSURL fileURLWithPath:[documentsDirectory stringByAppendingPathComponent:@"test.mov"]];
 	[[NSFileManager defaultManager] removeItemAtURL:outURL error:nil];
 	export.outputURL = outURL;
 	//set the output file type
 	//this doesn't like anything other than AVFileTypeAppleM4A
 	//it seems we should be able to specify AVFileTypeCoreAudioFormat (with AVAssetExportPresetPassthrough?) to skip
 	//the encoding step, but fuck you very much.
-	export.outputFileType = AVFileTypeAppleM4A;
+	
+	// Passthrough Preset
+	// mp3 -> test.wav/AVFileTypeWAVE == fails silently
+	// mp3 -> test.mp4/AVFileTypeMPEG4 == fails with -11820 "Cannot complete export"
+	// mp3 -> test.m4a/AVFileTypeAppleM4A == fails with -11820 "Cannot complete export'
+	// mp3 -> test.aif/AVFileTypeAIFF == fails silently, 0-length file
+	// mp3 -> test.aifc/AVFileTypeAIFC == fails silently, 0-length file
+	// mp3 -> test.mov/
+	
+	export.outputFileType = AVFileTypeQuickTimeMovie;
 	[export addObserver:self forKeyPath:@"status" options:0 context:nil];
 	[export addObserver:self forKeyPath:@"progress" options:0 context:nil];
 	startTime = [NSDate timeIntervalSinceReferenceDate];
@@ -134,7 +188,21 @@
 			NSLog(@"export.error: %@", export.error);
 		} else if (export.status == AVAssetExportSessionStatusCancelled) {
 			NSLog(@"export canceeld: %@", export.error);
+		} else {
+			NSLog(@"export complete!");
+			player = [[AVPlayer alloc] initWithURL:outURL];
+			if (!player) {
+				NSLog(@"couldn't create player!");
+			}
+			[player play];
+			if (player.status == AVPlayerStatusFailed) {
+				NSLog(@"AVPlayer Failed: %@", player.error);
+			}
+			AudioFileID audioFile;
+			OSStatus err = AudioFileOpenURL((CFURLRef)outURL, 0x01, 0, &audioFile);
+			NSLog(@"err: %d", err);
 		}
+
 		[export release];
 	}];
 }

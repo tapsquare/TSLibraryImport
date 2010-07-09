@@ -11,10 +11,10 @@
 #import <AVFoundation/AVFoundation.h>
 
 @interface iPodLibraryAccessViewController : UIViewController <MPMediaPickerControllerDelegate> {
-	AVPlayer* player;
 	IBOutlet UIProgressView* progressView;
 	IBOutlet UILabel* elapsedLabel;
 	NSTimeInterval startTime;
+	AVPlayer* player;
 }
 
 - (IBAction)pickSong:(id)sender;
