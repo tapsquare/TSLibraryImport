@@ -1,9 +1,9 @@
 TSLibraryImport
 ===============
 
-In iOS4, you're able to get access to the raw audio data of files stored in the user's iPod Library, but the method isn't straightforward: You have to use AVAssetExportSession with the passthrough preset, write the file to a QuickTime .mov file and then extract the audio data out of the .mov file to whatever container is appropriate.
+In iOS4, you're able to access to the raw audio data of files stored in the user's iPod Library, but the method isn't straightforward: You must first make a local copy of the file. And *that* isn't straightforward, either. To get a local copy you must use AVAssetExportSession with the passthrough preset, write the file to a QuickTime .mov file and then extract the audio data out of the .mov file to whatever container is appropriate. (Any other method involves an extremely lengthy transcode step.)
 
-The `TSLibraryImport` hides this complexity behind a simple interface.
+The `TSLibraryImport` class hides this complexity behind a simple interface.
 
 Use
 ---
