@@ -60,6 +60,8 @@
 	if (nil == export)
 		@throw [NSException exceptionWithName:@"TSUnknownError" reason:@"Couldn't create AVAssetExportSession" userInfo:nil];
 	
+	//TODO: instead of putting this in the same directory as the dest file, we should probably stuff
+	//this in tmp
 	NSURL* tmpURL = [[destURL URLByDeletingPathExtension] URLByAppendingPathExtension:@"mov"];
 	[[NSFileManager defaultManager] removeItemAtURL:tmpURL error:nil];
 	export.outputURL = tmpURL;
@@ -71,10 +73,17 @@
 		} else if (export.status == AVAssetExportSessionStatusCancelled) {
 			completionBlock(self);
 		} else {
-			[self extractQuicktimeMovie:tmpURL toFile:destURL];
+			@try {
+				[self extractQuicktimeMovie:tmpURL toFile:destURL];
+			}
+			@catch (NSException * e) {
+				//TODO: Crap, since we're delegating status/error to our AVAssetExportSession instance, we have a problem here
+				// Need to create our own status/error ivars
+			}
+			//clean up the tmp .mov file
+			[[NSFileManager defaultManager] removeItemAtURL:tmpURL error:nil];
 			completionBlock(self);
 		}
-		
 		[export release];
 		export = nil;
 	}];
@@ -83,7 +92,7 @@
 - (void)extractQuicktimeMovie:(NSURL*)movieURL toFile:(NSURL*)destURL {
 	FILE* src = fopen([[movieURL path] cStringUsingEncoding:NSUTF8StringEncoding], "r");
 	if (NULL == src) {
-		//TODO: failure
+		@throw [NSException exceptionWithName:@"TSUnknownException" reason:@"Couldn't open source file" userInfo:nil];
 		return;
 	}
 	char atom_name[5];
@@ -100,7 +109,8 @@
 			FILE* dst = fopen([[destURL path] cStringUsingEncoding:NSUTF8StringEncoding], "w");
 			unsigned char buf[4];
 			if (NULL == dst) {
-				//TODO: this is unlikely, but bad
+				fclose(src);
+				@throw [NSException exceptionWithName:@"TSUnknownException" reason:@"Couldn't open destination file" userInfo:nil];
 			}
 			for (uint32_t ii=0; ii<atom_size; ii+=4) {
 				fread(buf, 4, 1, src);
@@ -110,10 +120,12 @@
 			fclose(src);
 			return;
 		}
+		if (atom_size == 0)
+			break; //0 atom size means to the end of file... if it's not the mdat chunk, we're done
 		fseek(src, atom_size, SEEK_CUR);
 	}
 	fclose(src);
-	//TODO: failure
+	@throw [NSException exceptionWithName:@"TSUnknownException" reason:@"Didn't find mdat chunk"  userInfo:nil];
 }
 
 - (NSError*)error {

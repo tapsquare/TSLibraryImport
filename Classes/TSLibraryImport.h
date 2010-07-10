@@ -15,13 +15,21 @@
 
 /**
  * Pass in the NSURL* you get from an MPMediaItem's 
- * MPMediaItemAssetURL property to get the file's extension.
+ * MPMediaItemPropertyAssetURL property to get the file's extension.
  *
  * Helpful in constructing the destination url for the
  * imported file.
  */
 + (NSString*)extensionForAssetURL:(NSURL*)assetURL;
 
+/**
+ * @param: assetURL The NSURL* returned by MPMediaItemPropertyAssetURL property of MPMediaItem.
+ * @param: destURL The file URL to write the imported file to. You'll get an exception if a file
+ * exists at this location.
+ * @param completionBlock This block is called when the import completes. Note that 
+ * completion doesn't imply success. Be sure to check the status and error properties
+ * of the TSLibraryImport* instance from your completionBlock.
+ */
 - (void)importAsset:(NSURL*)assetURL toURL:(NSURL*)destURL completionBlock:(void (^)(TSLibraryImport* import))completionBlock;
 
 @property (readonly) NSError* error;

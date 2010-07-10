@@ -18,7 +18,7 @@
 }
 
 - (IBAction)pickSong:(id)sender;
-- (void)exportAssetAtURL:(NSURL*)assetURL;
+- (void)exportAssetAtURL:(NSURL*)assetURL withTitle:(NSString*)title;
 
 @end
 

@@ -12,50 +12,6 @@
 
 @implementation iPodLibraryAccessViewController
 
-/*
-// The designated initializer. Override to perform setup that is required before the view is loaded.
-- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
-    if ((self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil])) {
-        // Custom initialization
-    }
-    return self;
-}
-*/
-
-/*
-// Implement loadView to create a view hierarchy programmatically, without using a nib.
-- (void)loadView {
-}
-*/
-
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
-	if ([keyPath compare:@"status"] == 0) {
-		AVAssetExportSession* export = (AVAssetExportSession*)object;
-		switch (export.status) {
-			case AVAssetExportSessionStatusUnknown:
-				NSLog(@"AVAssetExportSessionStatusUnknown");
-				break;
-			case AVAssetExportSessionStatusExporting:
-				NSLog(@"AVAssetExportSessionStatusExporting");
-				break;
-			case AVAssetExportSessionStatusCompleted:
-				NSLog(@"AVAssetExportSessionStatusCompleted");
-				break;
-			case AVAssetExportSessionStatusFailed:
-				NSLog(@"AVAssetExportSessionStatusFailed");
-				break;
-			case AVAssetExportSessionStatusCancelled:
-				NSLog(@"AVAssetExportSessionStatusCancelled");
-				break;
-			case AVAssetExportSessionStatusWaiting:
-				NSLog(@"AVAssetExportSessionStatusWaiting");
-				break;
-			default:
-				break;
-		}
-	} 
-}
-
 - (void)viewDidLoad {
 	
     [super viewDidLoad];
@@ -63,31 +19,16 @@
 
 	AVAudioSession* session = [AVAudioSession sharedInstance];
 	NSError* error = nil;
-	// Thought maybe setting this to one of the "exclusive" categories
-	// would give us faster results, e.g., by granting us access to the
-	// hardware encoder, but with any other category, you get -11820 errors
-	// from AVAssetExportSession
-	if(![session setCategory:AVAudioSessionCategoryAmbient error:&error]) {
+	if(![session setCategory:AVAudioSessionCategoryPlayback error:&error]) {
 		NSLog(@"Couldn't set audio session category: %@", error);
-	}
-	
+	}	
 	if(![session setActive:YES error:&error]) {
 		NSLog(@"Couldn't make audio session active: %@", error);
 	}
-	
 }
-
-/*
-// Override to allow orientations other than the default portrait orientation.
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
-    // Return YES for supported orientations
-    return (interfaceOrientation == UIInterfaceOrientationPortrait);
-}
-*/
-
 
 - (void)progressTimer:(NSTimer*)timer {
-	AVAssetExportSession* export = (AVAssetExportSession*)timer.userInfo;
+	TSLibraryImport* export = (TSLibraryImport*)timer.userInfo;
 	switch (export.status) {
 		case AVAssetExportSessionStatusExporting:
 		{
@@ -108,18 +49,48 @@
 	}		
 }
 
-- (void)exportAssetAtURL:(NSURL*)assetURL {
+- (void)exportAssetAtURL:(NSURL*)assetURL withTitle:(NSString*)title {
 	
 	// create destination URL
 	NSString* ext = [TSLibraryImport extensionForAssetURL:assetURL];
-	
 	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 	NSString *documentsDirectory = [paths objectAtIndex:0];
-	NSURL* outURL = [[NSURL fileURLWithPath:[documentsDirectory stringByAppendingPathComponent:@"test"]] URLByAppendingPathExtension:ext];	
+	NSURL* outURL = [[NSURL fileURLWithPath:[documentsDirectory stringByAppendingPathComponent:title]] URLByAppendingPathExtension:ext];	
+	// we're responsible for making sure the destination url doesn't already exist
+	[[NSFileManager defaultManager] removeItemAtURL:outURL error:nil];
 	
+	// create the import object
 	TSLibraryImport* import = [[TSLibraryImport alloc] init];
+	startTime = [NSDate timeIntervalSinceReferenceDate];
+	NSTimer* timer = [NSTimer timerWithTimeInterval:0.1 target:self selector:@selector(progressTimer:) userInfo:import repeats:YES];
+	[[NSRunLoop mainRunLoop] addTimer:timer forMode:NSDefaultRunLoopMode];
 	[import importAsset:assetURL toURL:outURL completionBlock:^(TSLibraryImport* import) {
-		NSLog(@"export complete!");
+		/*
+		 * If the export was successful (check the status and error properties of 
+		 * the TSLibraryImport instance) you know have a local copy of the file
+		 * at `outURL` You can get PCM samples for processing by opening it with 
+		 * ExtAudioFile. Yay!
+		 *
+		 * Here we're just playing it with AVPlayer
+		 */
+		if (import.status != AVAssetExportSessionStatusCompleted) {
+			// something went wrong with the import
+			NSLog(@"Error importing: %@", import.error);
+			[import release];
+			import = nil;
+			return;
+		}
+		
+		// import completed
+		[import release];
+		import = nil;
+		if (!player) {
+			player = [[AVPlayer alloc] initWithURL:outURL];			
+		} else {
+			[player pause];
+			[player replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithURL:outURL]];
+		}
+		[player play];
 	}];
 }
 
@@ -129,8 +100,14 @@
 	for (MPMediaItem* item in mediaItemCollection.items) {
 		NSString* title = [item valueForProperty:MPMediaItemPropertyTitle];
 		NSURL* assetURL = [item valueForProperty:MPMediaItemPropertyAssetURL];
-		NSLog(@"title: %@, url: %@", title, assetURL);
-		[self exportAssetAtURL:assetURL];
+		if (nil == assetURL) {
+			/**
+			 * !!!: When MPMediaItemPropertyAssetURL is nil, it typically means the file
+			 * in question is protected by DRM. (old m4p files)
+			 */
+			return;
+		}
+		[self exportAssetAtURL:assetURL withTitle:title];
 	}
 }
 
@@ -151,6 +128,9 @@
 }
 
 - (void)showMediaPicker {
+	/*
+	 * ???: Can we filter the media picker so we don't see m4p files?
+	 */
 	MPMediaPickerController* mediaPicker = [[[MPMediaPickerController alloc] initWithMediaTypes:MPMediaTypeMusic] autorelease];
 	mediaPicker.delegate = self;
 	[self presentModalViewController:mediaPicker animated:YES];
@@ -161,6 +141,9 @@
 }
 
 - (void)dealloc {
+	[player release];
+	[progressView release];
+	[elapsedLabel release];
     [super dealloc];
 }
 
