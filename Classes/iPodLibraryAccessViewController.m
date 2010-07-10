@@ -8,6 +8,7 @@
 
 #import "iPodLibraryAccessViewController.h"
 #import <AudioToolbox/AudioToolbox.h>
+#import "TSLibraryImport.h"
 
 @implementation iPodLibraryAccessViewController
 
@@ -56,6 +57,7 @@
 }
 
 - (void)viewDidLoad {
+	
     [super viewDidLoad];
 	[progressView setProgress:0.f];
 
@@ -106,29 +108,6 @@
 	}		
 }
 
-- (void)dumpAsset:(AVURLAsset*)asset {
-	NSLog(@"asset.url: %@", asset.URL);
-	for (AVMetadataItem* item in asset.commonMetadata) {
-		NSLog(@"metadata: %@", item);
-	}
-	for (AVAssetTrack* track in asset.tracks) {
-		NSLog(@"track.id: %d", track.trackID);
-		NSLog(@"track.mediaType: %@", track.mediaType);
-		CMFormatDescriptionRef fmt = [track.formatDescriptions objectAtIndex:0];
-		AudioStreamBasicDescription* desc = CMAudioFormatDescriptionGetStreamBasicDescription(fmt);
-		NSLog(@"track.enabled: %d", track.enabled);
-		NSLog(@"track.selfContained: %d", track.selfContained);
-	}
-}
-
-- (void)openURL:(NSURL*)assetURL {
-	AudioFileID audioFile;
-	OSStatus err = AudioFileOpenURL((CFURLRef)assetURL, 0x01, 0, &audioFile);
-	if (noErr != err) {
-		NSLog(@"couldn't open url: %d", err);
-	}
-}
-
 - (void)exportAssetAtURL:(NSURL*)assetURL {
 	NSDictionary * options = [[NSDictionary alloc] init];
 	AVURLAsset* asset = [AVURLAsset URLAssetWithURL:assetURL options:options];	
@@ -159,6 +138,7 @@
 	for (NSString* type in export.supportedFileTypes) {
 		NSLog(@"type: %@", type);
 	}
+	
 	//set the export session's outputURL to <Documents>/test.m4a
 	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 	NSString *documentsDirectory = [paths objectAtIndex:0];
