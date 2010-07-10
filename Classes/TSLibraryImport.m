@@ -40,10 +40,10 @@
 	return assetURL.pathExtension;
 }
 
-- (void)importAsset:(NSURL*)assetURL toURL:(NSURL*)destURL {
+- (void)importAsset:(NSURL*)assetURL toURL:(NSURL*)destURL completionBlock:(void (^)(TSLibraryImport* import))completionBlock {
 	//TODO: add completion handler to method
 
-	if (nil == assetURL || nil == destURL)
+		if (nil == assetURL || nil == destURL)
 		@throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"nil url" userInfo:nil];
 	if (![TSLibraryImport validIpodLibraryURL:assetURL])
 		@throw [NSException exceptionWithName:NSInvalidArgumentException reason:[NSString stringWithFormat:@"Invalid iPod Library URL: %@", assetURL] userInfo:nil];
@@ -56,26 +56,27 @@
 	if (nil == asset) 
 		@throw [NSException exceptionWithName:@"TSUnknownError" reason:[NSString stringWithFormat:@"Couldn't create AVURLAsset with url: %@", assetURL] userInfo:nil];
 	
-	AVAssetExportSession* export = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetPassthrough];
+	export = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetPassthrough];
 	if (nil == export)
 		@throw [NSException exceptionWithName:@"TSUnknownError" reason:@"Couldn't create AVAssetExportSession" userInfo:nil];
 	
-	//TODO: create a tmp url to write the .mov file to (NOT destURL)
 	NSURL* tmpURL = [[destURL URLByDeletingPathExtension] URLByAppendingPathExtension:@"mov"];
+	[[NSFileManager defaultManager] removeItemAtURL:tmpURL error:nil];
 	export.outputURL = tmpURL;
 
 	export.outputFileType = AVFileTypeQuickTimeMovie;
 	[export exportAsynchronouslyWithCompletionHandler:^(void) {
 		if (export.status == AVAssetExportSessionStatusFailed) {
-			NSLog(@"export.error: %@", export.error);
+			completionBlock(self);
 		} else if (export.status == AVAssetExportSessionStatusCancelled) {
-			NSLog(@"export canceled: %@", export.error);
+			completionBlock(self);
 		} else {
-			NSLog(@"export complete!");
 			[self extractQuicktimeMovie:tmpURL toFile:destURL];
+			completionBlock(self);
 		}
 		
 		[export release];
+		export = nil;
 	}];
 }
 
@@ -115,4 +116,15 @@
 	//TODO: failure
 }
 
+- (NSError*)error {
+	return export.error;
+}
+
+- (AVAssetExportSessionStatus)status {
+	return export.status;
+}
+
+- (float)progress {
+	return export.progress;
+}
 @end

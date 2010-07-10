@@ -10,7 +10,7 @@
 
 
 @interface TSLibraryImport : NSObject {
-
+	AVAssetExportSession* export;
 }
 
 /**
@@ -22,6 +22,10 @@
  */
 + (NSString*)extensionForAssetURL:(NSURL*)assetURL;
 
-- (void)importAsset:(NSURL*)assetURL toURL:(NSURL*)destURL;
+- (void)importAsset:(NSURL*)assetURL toURL:(NSURL*)destURL completionBlock:(void (^)(TSLibraryImport* import))completionBlock;
+
+@property (readonly) NSError* error;
+@property (readonly) AVAssetExportSessionStatus status;
+@property (readonly) float progress;
 
 @end
