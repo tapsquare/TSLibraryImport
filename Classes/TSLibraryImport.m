@@ -11,6 +11,7 @@
 @interface TSLibraryImport()
 
 + (BOOL)validIpodLibraryURL:(NSURL*)url;
+- (void)extractQuicktimeMovie:(NSURL*)movieURL toFile:(NSURL*)destURL;
 
 @end
 
@@ -34,26 +35,34 @@
 + (NSString*)extensionForAssetURL:(NSURL*)assetURL {
 	if (nil == assetURL)
 		@throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"nil assetURL" userInfo:nil];
-	if (![self validIpodLibraryURL:assetURL])
+	if (![TSLibraryImport validIpodLibraryURL:assetURL])
 		@throw [NSException exceptionWithName:NSInvalidArgumentException reason:[NSString stringWithFormat:@"Invalid iPod Library URL: %@", assetURL] userInfo:nil];
 	return assetURL.pathExtension;
 }
 
 - (void)importAsset:(NSURL*)assetURL toURL:(NSURL*)destURL {
+	//TODO: add completion handler to method
+
 	if (nil == assetURL || nil == destURL)
 		@throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"nil url" userInfo:nil];
-	//TODO: throw on invalid urls
-	//TODO: add completion handler to method
+	if (![TSLibraryImport validIpodLibraryURL:assetURL])
+		@throw [NSException exceptionWithName:NSInvalidArgumentException reason:[NSString stringWithFormat:@"Invalid iPod Library URL: %@", assetURL] userInfo:nil];
+
+	if ([[NSFileManager defaultManager] fileExistsAtPath:[destURL path]])
+		 @throw [NSException exceptionWithName:@"TSFileExists" reason:[NSString stringWithFormat:@"File already exists at url: %@", destURL] userInfo:nil];
 	
 	NSDictionary * options = [[NSDictionary alloc] init];
 	AVURLAsset* asset = [AVURLAsset URLAssetWithURL:assetURL options:options];	
-	//TODO: throw on nil?
+	if (nil == asset) 
+		@throw [NSException exceptionWithName:@"TSUnknownError" reason:[NSString stringWithFormat:@"Couldn't create AVURLAsset with url: %@", assetURL] userInfo:nil];
 	
 	AVAssetExportSession* export = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetPassthrough];
+	if (nil == export)
+		@throw [NSException exceptionWithName:@"TSUnknownError" reason:@"Couldn't create AVAssetExportSession" userInfo:nil];
 	
-	//TODO: if tmpURL exists, fail -- caller must handle this themselves
 	//TODO: create a tmp url to write the .mov file to (NOT destURL)
-	export.outputURL = destURL;
+	NSURL* tmpURL = [[destURL URLByDeletingPathExtension] URLByAppendingPathExtension:@"mov"];
+	export.outputURL = tmpURL;
 
 	export.outputFileType = AVFileTypeQuickTimeMovie;
 	[export exportAsynchronouslyWithCompletionHandler:^(void) {
@@ -63,11 +72,47 @@
 			NSLog(@"export canceled: %@", export.error);
 		} else {
 			NSLog(@"export complete!");
-			//TODO: parse .mov file to dest file
+			[self extractQuicktimeMovie:tmpURL toFile:destURL];
 		}
 		
 		[export release];
 	}];
+}
+
+- (void)extractQuicktimeMovie:(NSURL*)movieURL toFile:(NSURL*)destURL {
+	FILE* src = fopen([[movieURL path] cStringUsingEncoding:NSUTF8StringEncoding], "r");
+	if (NULL == src) {
+		//TODO: failure
+		return;
+	}
+	char atom_name[5];
+	atom_name[4] = '\0';
+	unsigned long atom_size = 0;
+	while (true) {
+		if (feof(src)) {
+			break;
+		}
+		fread((void*)&atom_size, 4, 1, src);
+		fread(atom_name, 4, 1, src);
+		atom_size = ntohl(atom_size);
+		if (strcmp("mdat", atom_name) == 0) {
+			FILE* dst = fopen([[destURL path] cStringUsingEncoding:NSUTF8StringEncoding], "w");
+			unsigned char buf[4];
+			if (NULL == dst) {
+				//TODO: this is unlikely, but bad
+			}
+			for (uint32_t ii=0; ii<atom_size; ii+=4) {
+				fread(buf, 4, 1, src);
+				fwrite(buf, 4, 1, dst);
+			}
+			fclose(dst);
+			fclose(src);
+			return;
+		}
+		fseek(src, atom_size, SEEK_CUR);
+	}
+	fclose(src);
+	//TODO: failure
 }
 
 @end

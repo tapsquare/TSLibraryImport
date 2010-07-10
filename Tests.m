@@ -67,10 +67,21 @@
 }
 
 - (void)testExportNilParameters {
-	TSLibraryImport* import = [[TSLibraryImport alloc] init];
+	TSLibraryImport* import = [[[TSLibraryImport alloc] init] autorelease];
 	NSURL* dummyURL = [NSURL URLWithString:@"ipod-library://item/item.mp3?id=1425010501608620615"];
 	GHAssertThrowsSpecificNamed([import importAsset:dummyURL toURL:nil], NSException, NSInvalidArgumentException, @"nil parameter should throw NSInvalidArgumentException");
 	GHAssertThrowsSpecificNamed([import importAsset:nil toURL:dummyURL], NSException, NSInvalidArgumentException, @"nil parameter should throw NSInvalidArgumentException");
+}
+
+- (void)testExportInvalidURL {
+	TSLibraryImport* import = [[[TSLibraryImport alloc] init] autorelease];
+	NSURL* badURL = [NSURL URLWithString:@"lame-scheme://item/lame.txt?id=1234"];
+	
+	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+	NSString *documentsDirectory = [paths objectAtIndex:0];
+	NSURL* outURL = [NSURL fileURLWithPath:[documentsDirectory stringByAppendingPathComponent:@"test.mov"]];
+	
+	GHAssertThrowsSpecificNamed([import importAsset:badURL toURL:outURL], NSException, NSInvalidArgumentException, @"importAsset: should throw NSInvalidArgumentException for %@", badURL);
 }
 
 @end
