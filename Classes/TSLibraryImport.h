@@ -8,9 +8,17 @@
 
 #import <AVFoundation/AVFoundation.h>
 
+#define TSLibraryImportErrorDomain @"TSLibraryImportErrorDomain"
+
+#define TSUnknownError @"TSUnknownError"
+#define TSFileExistsError @"TSFileExistsError"
+
+#define kTSUnknownError -65536
+#define kTSFileExistsError -48 //dupFNErr
 
 @interface TSLibraryImport : NSObject {
 	AVAssetExportSession* export;
+	NSError* movieFileErr;
 }
 
 /**
