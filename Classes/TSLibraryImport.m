@@ -150,6 +150,7 @@
 		fread((void*)&atom_size, 4, 1, src);
 		fread(atom_name, 4, 1, src);
 		atom_size = ntohl(atom_size);
+        uint32_t readSize = 1024*100;
 		if (strcmp("mdat", atom_name) == 0) {
 			FILE* dst = fopen([[destURL path] cStringUsingEncoding:NSUTF8StringEncoding], "w");
 			unsigned char buf[4];
@@ -157,9 +158,9 @@
 				fclose(src);
 				@throw [NSException exceptionWithName:TSUnknownError reason:@"Couldn't open destination file" userInfo:nil];
 			}
-			for (uint32_t ii=0; ii<atom_size; ii+=4) {
-				fread(buf, 4, 1, src);
-				fwrite(buf, 4, 1, dst);
+			for (uint32_t ii=0; ii<atom_size; ii+=readSize) {
+				int bytes_read = fread(buf, 1, readSize, src);
+				fwrite(buf, 1, bytes_read, dst);
 			}
 			fclose(dst);
 			fclose(src);
