@@ -150,18 +150,24 @@
 		fread((void*)&atom_size, 4, 1, src);
 		fread(atom_name, 4, 1, src);
 		atom_size = ntohl(atom_size);
-        uint32_t readSize = 1024*100;
+        const size_t bufferSize = 1024*100;
 		if (strcmp("mdat", atom_name) == 0) {
 			FILE* dst = fopen([[destURL path] cStringUsingEncoding:NSUTF8StringEncoding], "w");
-			unsigned char buf[4];
+			unsigned char buf[bufferSize];
 			if (NULL == dst) {
 				fclose(src);
 				@throw [NSException exceptionWithName:TSUnknownError reason:@"Couldn't open destination file" userInfo:nil];
 			}
-			for (uint32_t ii=0; ii<atom_size; ii+=readSize) {
-				int bytes_read = fread(buf, 1, readSize, src);
-				fwrite(buf, 1, bytes_read, dst);
-			}
+            // Thanks to Rolf Nilsson/Roni Music for pointing out the bug here:
+            // Quicktime atom size field includes the 8 bytes of the header itself.
+            atom_size -= 8;
+            while (atom_size != 0) {
+                size_t read_size = (bufferSize < atom_size)?bufferSize:atom_size;
+                if (fread(buf, read_size, 1, src) == 1) {
+                    fwrite(buf, read_size, 1, dst);
+                }
+                atom_size -= read_size;
+            }
 			fclose(dst);
 			fclose(src);
 			return;
