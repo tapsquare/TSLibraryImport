@@ -35,7 +35,7 @@ typedef NSInteger AVAssetExportSessionStatus;
 @class AVAssetExportSession;
 
 @interface TSLibraryImport : NSObject {
-	AVAssetExportSession* export;
+	AVAssetExportSession* exportSession;
 	NSError* movieFileErr;
 }
 

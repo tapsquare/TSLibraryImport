@@ -62,13 +62,13 @@
 	//this in tmp
 	NSURL* tmpURL = [[destURL URLByDeletingPathExtension] URLByAppendingPathExtension:@"mov"];
 	[[NSFileManager defaultManager] removeItemAtURL:tmpURL error:nil];
-	export.outputURL = tmpURL;
+	exportSession.outputURL = tmpURL;
 	
-	export.outputFileType = AVFileTypeQuickTimeMovie;
-	[export exportAsynchronouslyWithCompletionHandler:^(void) {
-		if (export.status == AVAssetExportSessionStatusFailed) {
+	exportSession.outputFileType = AVFileTypeQuickTimeMovie;
+	[exportSession exportAsynchronouslyWithCompletionHandler:^(void) {
+		if (exportSession.status == AVAssetExportSessionStatusFailed) {
 			completionBlock(self);
-		} else if (export.status == AVAssetExportSessionStatusCancelled) {
+		} else if (exportSession.status == AVAssetExportSessionStatusCancelled) {
 			completionBlock(self);
 		} else {
 			@try {
@@ -86,8 +86,8 @@
 			[[NSFileManager defaultManager] removeItemAtURL:tmpURL error:nil];
 			completionBlock(self);
 		}
-		[export release];
-		export = nil;
+		[exportSession release];
+		exportSession = nil;
 	}];	
 }
 
@@ -105,8 +105,8 @@
 	if (nil == asset) 
 		@throw [NSException exceptionWithName:TSUnknownError reason:[NSString stringWithFormat:@"Couldn't create AVURLAsset with url: %@", assetURL] userInfo:nil];
 	
-	export = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetPassthrough];
-	if (nil == export)
+	exportSession = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetPassthrough];
+	if (nil == exportSession)
 		@throw [NSException exceptionWithName:TSUnknownError reason:@"Couldn't create AVAssetExportSession" userInfo:nil];
 	
 	if ([[assetURL pathExtension] compare:@"mp3"] == NSOrderedSame) {
@@ -114,23 +114,23 @@
 		return;
 	}
 
-	export.outputURL = destURL;
+	exportSession.outputURL = destURL;
 	
 	// set the output file type appropriately based on asset URL extension
 	if ([[assetURL pathExtension] compare:@"m4a"] == NSOrderedSame) {
-		export.outputFileType = AVFileTypeAppleM4A;
+		exportSession.outputFileType = AVFileTypeAppleM4A;
 	} else if ([[assetURL pathExtension] compare:@"wav"] == NSOrderedSame) {
-		export.outputFileType = AVFileTypeWAVE;
+		exportSession.outputFileType = AVFileTypeWAVE;
 	} else if ([[assetURL pathExtension] compare:@"aif"] == NSOrderedSame) {
-		export.outputFileType = AVFileTypeAIFF;
+		exportSession.outputFileType = AVFileTypeAIFF;
 	} else {
 		@throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"unrecognized file extension" userInfo:nil];
 	}
 
-	[export exportAsynchronouslyWithCompletionHandler:^(void) {
+	[exportSession exportAsynchronouslyWithCompletionHandler:^(void) {
 		completionBlock(self);
-		[export release];
-		export = nil;
+		[exportSession release];
+		exportSession = nil;
 	}];
 }
 
@@ -184,22 +184,22 @@
 	if (movieFileErr) {
 		return movieFileErr;
 	}
-	return export.error;
+	return exportSession.error;
 }
 
 - (AVAssetExportSessionStatus)status {
 	if (movieFileErr) {
 		return AVAssetExportSessionStatusFailed;
 	}
-	return export.status;
+	return exportSession.status;
 }
 
 - (float)progress {
-	return export.progress;
+	return exportSession.progress;
 }
 
 - (void)dealloc {
-	[export release];
+	[exportSession release];
 	[movieFileErr release];
 	[super dealloc];
 }
