@@ -190,7 +190,7 @@
 	return exportSession.error;
 }
 
-- (AVAssetExportSessionStatus)status {
+- (TSAssetExportSessionStatus)status {
 	if (movieFileErr) {
 		return AVAssetExportSessionStatusFailed;
 	}
