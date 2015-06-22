@@ -43,7 +43,8 @@
 	if ([url.pathExtension compare:@"mp3"] != NSOrderedSame &&
 		[url.pathExtension compare:@"aif"] != NSOrderedSame &&
 		[url.pathExtension compare:@"m4a"] != NSOrderedSame &&
-		[url.pathExtension compare:@"wav"] != NSOrderedSame) {
+		[url.pathExtension compare:@"wav"] != NSOrderedSame &&
+        [url.pathExtension compare:@"m4v"] != NSOrderedSame) {
 		return NO;
 	}
 	return YES;
@@ -123,6 +124,8 @@
 		exportSession.outputFileType = AVFileTypeWAVE;
 	} else if ([[assetURL pathExtension] compare:@"aif"] == NSOrderedSame) {
 		exportSession.outputFileType = AVFileTypeAIFF;
+	} else if ([[assetURL pathExtension] compare:@"m4v"] == NSOrderedSame) {
+		exportSession.outputFileType = AVFileTypeAppleM4V;
 	} else {
 		@throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"unrecognized file extension" userInfo:nil];
 	}
@@ -187,7 +190,7 @@
 	return exportSession.error;
 }
 
-- (AVAssetExportSessionStatus)status {
+- (TSAssetExportSessionStatus)status {
 	if (movieFileErr) {
 		return AVAssetExportSessionStatusFailed;
 	}
