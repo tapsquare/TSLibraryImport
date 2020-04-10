@@ -30,7 +30,7 @@
 #define kTSUnknownError -65536
 #define kTSFileExistsError -48 //dupFNErr
 
-typedef NSInteger AVAssetExportSessionStatus;
+typedef NS_ENUM(NSInteger, AVAssetExportSessionStatus);
 
 @class AVAssetExportSession;
 
