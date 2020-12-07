@@ -2,7 +2,7 @@
   "name": "TSLibraryImport",
   "version": "0.0.1",
   "platforms": {
-    "ios": null
+    "ios": "8.0"
   },
   "license": "MIT",
   "summary": "Objective-C class for importing files from user's iPod Library in iOS4.",
